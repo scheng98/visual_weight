@@ -29,13 +29,26 @@
 
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
+#include "spunc/Loadcell.h"
+#include "spunc/spunc.h"
+
+//
+// void spunc_msg_callback
+// When visual_wight node receives a "spunc_rx" message, it invokes this callback function
+//
+void spunc_msg_callback(const spunc::Loadcell& msg)
+{
+    ROS_INFO("%s: I heard", __FUNCTION__);
+
+}
 
 int main( int argc, char** argv )
 {
-  ros::init(argc, argv, "basic_shapes");
+  ros::init(argc, argv, "visual_weight");
   ros::NodeHandle n;
   ros::Rate r(1);
   ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
+  ros::Subscriber sub = n.subscribe("spunc_rx", 1000, spunc_msg_callback);
 
   // Set our initial shape type to be a cube
   uint32_t shape = visualization_msgs::Marker::CYLINDER;
