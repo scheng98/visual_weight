@@ -1,37 +1,9 @@
-/*
- * Copyright (c) 2010, Willow Garage, Inc.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Willow Garage, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include "spunc/Loadcell.h"
 #include "spunc/spunc.h"
 
+static uint16_t s16p_decipounds[8] = {1};
 //
 // void spunc_msg_callback
 // When visual_wight node receives a "spunc_rx" message, it invokes this callback function
@@ -39,6 +11,13 @@
 void spunc_msg_callback(const spunc::Loadcell& msg)
 {
     ROS_INFO("%s: I heard", __FUNCTION__);
+
+    if (msg.RH.u8_type == 0x3A /* SPUC_SERIAL_REC_LOADCELL */)
+    {
+        ROS_INFO("%s: got LOADCELL first two readings, %d, %d", 
+                 __FUNCTION__, msg.s16p_decipounds[0], msg.s16p_decipounds[1]);
+        memcpy((uint16_t *)s16p_decipounds, (uint16_t *)&msg.s16p_decipounds[0], 8);
+    }
 
 }
 
@@ -52,7 +31,6 @@ int main( int argc, char** argv )
 
   // Set our initial shape type to be a cube
   uint32_t shape = visualization_msgs::Marker::CYLINDER;
-  uint32_t i = 1;
 
   while (ros::ok())
   {
@@ -82,16 +60,14 @@ int main( int argc, char** argv )
     marker.pose.orientation.w = 1.0;
 
     // Set the scale of the marker -- 1x1x1 here means 1m on a side
-    i++;
-    if (i >= 5) i = 1;
-    marker.scale.x = 1.0/i;
-    marker.scale.y = 1.0;
+    marker.scale.x = 1.0*s16p_decipounds[0];
+    marker.scale.y = 1.0*s16p_decipounds[0];
     marker.scale.z = 1.0;
 
     // Set the color -- be sure to set alpha to something non-zero!
     marker.color.r = 0.0f;
-    marker.color.g = (1.0f)/i;
-    marker.color.b = (0.1f) * i;
+    marker.color.g = (1.0f);
+    marker.color.b = (0.1f);
     marker.color.a = 1.0;
 
     marker.lifetime = ros::Duration();
